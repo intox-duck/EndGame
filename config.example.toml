@@ -1,0 +1,65 @@
+# Operator configuration. Copy to config.toml and edit.
+# Secrets do NOT go here — they live in .env / the environment.
+
+[provider]
+name = "gemini"
+auth = "vertex"          # "vertex" (enterprise, UK region) or "api_key"
+tier = "paid"            # MUST be "paid" — the free tier is refused (training risk)
+project = ""             # GCP project id for Vertex; or set GOOGLE_CLOUD_PROJECT
+location = "europe-west2"
+location_fallback = "global"
+preferred_model = "gemini-3.8-flash"
+fallback_model = "gemini-3.5-flash"
+
+[loop]
+max_steps = 150
+max_cost_per_run = 3.0        # in [currency]; the run stops if exceeded
+max_runtime_seconds = 1800
+screenshots_in_context = 3    # keep only the last N screenshots in context
+settle_delay_seconds = 0.4    # pause after each action before the next screenshot
+
+[screen]
+monitor_index = 1             # mss monitor index; 1 = primary
+max_image_width = 1280        # downscale screenshots to this width before sending
+
+currency = "USD"              # "USD" | "GBP" | "EUR"
+
+# Prices live in config, not code. Per MILLION tokens, in [currency].
+# Keys are quoted because model ids contain dots.
+# gemini-3.8-flash price is a placeholder — confirm before trusting cost figures.
+[prices."gemini-3.8-flash"]
+input = 1.50
+output = 9.00
+cached_input = 0.15
+
+[prices."gemini-3.5-flash"]
+input = 1.50
+output = 9.00
+cached_input = 0.15
+
+[guard]
+# Actions whose text/context match any of these pause for confirmation.
+confirm_keywords = [
+    "send", "submit", "post", "publish", "delete", "remove", "pay",
+    "purchase", "confirm", "apply", "connect", "message", "inmail",
+]
+# If non-empty, the agent may only act while one of these is the foreground
+# window title (substring match). Empty = allow any (still subject to blocklist).
+window_allowlist = []
+
+[privacy]
+# Foreground windows whose title contains any of these are NOT captured without
+# asking. Scope note: Outlook and Teams are intentionally NOT here — they are
+# targets for this owner. Banking apps and password managers are blocked.
+capture_blocklist = [
+    "1password", "bitwarden", "keepass", "lastpass", "dashlane",
+    "banking", "barclays", "hsbc", "lloyds", "nationwide", "natwest",
+    "monzo", "starling", "revolut",
+]
+# Rectangles blacked out before every screenshot is sent: [x, y, width, height].
+redaction_regions = []
+screenshot_retention_days = 7
+
+[paths]
+logs_dir = "logs"
+recordings_dir = "recordings"

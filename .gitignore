@@ -1,0 +1,27 @@
+# Secrets & local config
+.env
+config.toml
+
+# Run artefacts (local only, may contain screenshots of your screen)
+logs/
+recordings/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+.mypy_cache/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
