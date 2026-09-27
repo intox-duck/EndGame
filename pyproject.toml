@@ -24,6 +24,7 @@ desktop = [
     "pynput>=1.7.6",
     "pydirectinput>=1.0.4; sys_platform == 'win32'",
     "pywin32>=306; sys_platform == 'win32'",
+    "keyring>=25.0.0",
 ]
 dev = [
     "pytest>=8.0.0",

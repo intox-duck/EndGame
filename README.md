@@ -62,17 +62,39 @@ this README carry the warning; the general tool is unaffected.
 
 ## Install (Windows)
 
-Requires Python 3.11+. No admin rights needed.
+Two ways. No admin rights needed for either.
 
+**A) One-click installer (recommended for a finished machine).**
+On a Windows box with `uv` and Inno Setup 6:
+```bat
+build_installer.bat        REM builds dist\Operator.exe then Output\OperatorSetup.exe
+```
+Run `OperatorSetup.exe`. It installs Operator, creates shortcuts, and on **first
+launch** asks for your **paid-tier Gemini API key** — stored in Windows Credential
+Manager, never on disk. It seeds `config.toml` and `profile.toml` next to the app;
+edit `profile.toml` to teach it your voice and habits (see **Your profile** below).
+
+**B) From source (for development / test machines).**
+Requires Python 3.11+.
 ```bat
 setup.bat        REM creates the venv, installs deps, copies config.example.toml and .env.example
+run.bat          REM launches the GUI (first run prompts for the API key)
 ```
+Re-run the key prompt any time with `run.bat --setup`.
 
-Then edit `config.toml` and `.env`, and:
+> Auth: the API-key prompt applies when `provider.auth = "api_key"`. For **Vertex
+> AI** (the default) set `provider.project` and authenticate with gcloud instead —
+> no key prompt.
 
-```bat
-run.bat          REM launches the GUI
-```
+## Your profile ("baked me")
+
+`profile.toml` (copied from `profile.example.toml` on first run, git-ignored) is
+composed into the model's instruction on **every** run, so Operator works in your
+voice and to your rules from step one. Fill in the TODO blanks — sign-offs, voice
+samples, recurring tasks, do-not-contact list. The more real examples of your own
+messages you paste into `voice.voice_samples`, the closer it tracks your tone.
+Personal data stays local: `profile.toml` is never committed or bundled into the
+exe.
 
 ## Auth
 
@@ -155,9 +177,13 @@ isolated behind interfaces with fakes so the whole loop runs in CI.
 ## Packaging
 
 ```bat
-uv run pyinstaller operator.spec     REM builds dist\Operator.exe
+build_installer.bat                  REM exe + installer in one step
+REM or, the pieces:
+uv run pyinstaller operator.spec     REM builds dist\Operator.exe (bundles the examples + playbooks)
+iscc installer.iss                   REM wraps it as Output\OperatorSetup.exe
 ```
-Ship `config.example.toml`, `.env.example` and `playbooks/` alongside the exe.
+The exe self-seeds `config.toml`/`profile.toml` on first run and prompts for the
+API key. `profile.toml` and secrets are never bundled.
 
 ## Known limits
 

@@ -142,13 +142,14 @@ class GeminiProvider:
             return genai.Client(
                 vertexai=True, project=project, location=self.config.location
             )
-        import os  # noqa: PLC0415
+        from operator_app import secrets_store  # noqa: PLC0415
 
-        key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
+        key = secrets_store.get_api_key()
         if not key:
             raise ProviderError(
-                "auth = api_key but no GOOGLE_API_KEY/GEMINI_API_KEY in the "
-                "environment."
+                "auth = api_key but no Gemini API key found (checked "
+                "GOOGLE_API_KEY/GEMINI_API_KEY and the OS keyring). Run "
+                "`operator --setup` or set the environment variable."
             )
         return genai.Client(api_key=key)
 

@@ -1,6 +1,11 @@
 # Secrets & local config
 .env
 config.toml
+profile.toml
+
+# PyInstaller / installer output
+Output/
+*.spec.bak
 
 # Run artefacts (local only, may contain screenshots of your screen)
 logs/

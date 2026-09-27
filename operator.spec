@@ -9,14 +9,28 @@ from PyInstaller.utils.hooks import collect_submodules
 hiddenimports = (
     collect_submodules("google.genai")
     + collect_submodules("PySide6")
-    + ["pynput.keyboard._win32", "pynput.mouse._win32"]
+    + collect_submodules("keyring")
+    + [
+        "pynput.keyboard._win32",
+        "pynput.mouse._win32",
+        # keyring's Windows backend (Credential Manager):
+        "keyring.backends.Windows",
+    ]
 )
+
+# Ship the example configs and playbooks next to the exe so first run can seed
+# config.toml / profile.toml. Personal profile.toml is NEVER bundled.
+datas = [
+    ("config.example.toml", "."),
+    ("profile.example.toml", "."),
+    ("playbooks", "playbooks"),
+]
 
 a = Analysis(
     ["src/operator_app/__main__.py"],
     pathex=["src"],
     binaries=[],
-    datas=[],
+    datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],
     runtime_hooks=[],
