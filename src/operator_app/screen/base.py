@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import math
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -56,9 +57,17 @@ def model_to_physical(
     """
     if coord_max <= 0:
         raise ValueError("coord_max must be positive")
+    # Non-finite values (NaN/inf) can arrive from a malformed model response;
+    # treat them as 0 rather than crashing the run.
+    fx = float(mx)
+    fy = float(my)
+    if not math.isfinite(fx):
+        fx = 0.0
+    if not math.isfinite(fy):
+        fy = 0.0
     # Clamp into range so an out-of-range model value never lands off-screen.
-    mx = min(max(float(mx), 0.0), float(coord_max))
-    my = min(max(float(my), 0.0), float(coord_max))
+    mx = min(max(fx, 0.0), float(coord_max))
+    my = min(max(fy, 0.0), float(coord_max))
     px = geom.left + round(mx / coord_max * (geom.width - 1))
     py = geom.top + round(my / coord_max * (geom.height - 1))
     return int(px), int(py)

@@ -51,6 +51,16 @@ _SECRET_PATTERNS = (
 # Words that, if they name the compose target, indicate a compose/reply box.
 _COMPOSE_HINTS = ("compose", "reply", "new message", "to:", "message body")
 
+# Foreground apps where Enter / Ctrl+Enter commonly SENDS. In these, an
+# Enter-class keypress is confirmed even with no compose narration, because a
+# terse model can send silently otherwise. Substring match on the window title.
+_COMMS_WINDOW_HINTS = (
+    "outlook", "teams", "slack", "gmail", "mail", "messeng", "whatsapp",
+    "discord", "telegram", "webex", "zoom chat",
+)
+
+_ENTER_KEYS = ("enter", "return", "ctrl+enter", "cmd+enter", "alt+s")
+
 
 class KillSwitch(Protocol):
     """Something the loop can poll to know the user hit the abort hotkey."""
@@ -145,16 +155,20 @@ class Guard:
                 Verdict.CONFIRM, "Typing into a compose/reply box — confirm."
             )
 
-        # 5) Pressing Enter while a compose box is focused can send a message.
+        # 5) Enter / Ctrl+Enter can send. Confirm when either a compose box is in
+        #    context OR the foreground app is a known comms client (where a terse
+        #    model could otherwise send with no narration to match on).
         if action.type is ActionType.KEY and action.keys:
-            keys = action.keys.lower()
-            if keys in ("enter", "return", "ctrl+enter") and any(
-                h in haystack for h in _COMPOSE_HINTS
-            ):
-                return GuardDecision(
-                    Verdict.CONFIRM,
-                    "Enter in a compose box may send the message — confirm.",
-                )
+            keys = action.keys.replace(" ", "").lower()
+            if keys in _ENTER_KEYS:
+                in_compose = any(h in haystack for h in _COMPOSE_HINTS)
+                in_comms = any(h in (window_title or "").lower()
+                               for h in _COMMS_WINDOW_HINTS)
+                if in_compose or in_comms:
+                    return GuardDecision(
+                        Verdict.CONFIRM,
+                        "Enter/Ctrl+Enter may send a message here — confirm.",
+                    )
 
         return GuardDecision(Verdict.ALLOW)
 

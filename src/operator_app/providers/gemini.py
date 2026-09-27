@@ -75,16 +75,30 @@ def _first(d: dict, *keys, default=None):
     return default
 
 
+def _num(v) -> float | None:
+    """Best-effort float conversion; None for junk the model might emit."""
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return None
+    return f
+
+
 def _extract_xy(args: dict) -> tuple[float | None, float | None]:
-    """Pull normalised coordinates out of assorted possible arg shapes."""
-    if "coordinate" in args and isinstance(args["coordinate"], (list, tuple)):
-        c = args["coordinate"]
-        if len(c) >= 2:
-            return float(c[0]), float(c[1])
-    x = _first(args, "x", "px", "pos_x")
-    y = _first(args, "y", "py", "pos_y")
+    """Pull normalised coordinates out of assorted possible arg shapes.
+
+    Never raises: malformed values from the model become (None, None) so the
+    caller skips coordinates rather than crashing the run.
+    """
+    c = args.get("coordinate")
+    if isinstance(c, (list, tuple)) and len(c) >= 2:
+        x, y = _num(c[0]), _num(c[1])
+        if x is not None and y is not None:
+            return x, y
+    x = _num(_first(args, "x", "px", "pos_x"))
+    y = _num(_first(args, "y", "py", "pos_y"))
     if x is not None and y is not None:
-        return float(x), float(y)
+        return x, y
     return None, None
 
 
@@ -316,9 +330,10 @@ class GeminiProvider:
             dest = args.get("destination")
             if isinstance(dest, (list, tuple)) and len(dest) >= 2:
                 dx, dy = dest[0], dest[1]
+            dx, dy = _num(dx), _num(dy)
             if None not in (mx, my, dx, dy) and self.geometry is not None:
                 kwargs["x"], kwargs["y"] = model_to_physical(mx, my, self.geometry, self._coord_max)
-                kwargs["x2"], kwargs["y2"] = model_to_physical(float(dx), float(dy), self.geometry, self._coord_max)
+                kwargs["x2"], kwargs["y2"] = model_to_physical(dx, dy, self.geometry, self._coord_max)
 
         if atype is ActionType.TYPE:
             kwargs["text"] = str(_first(args, "text", "content", "value", default=""))
@@ -328,16 +343,18 @@ class GeminiProvider:
                 keys = "+".join(str(k) for k in keys)
             kwargs["keys"] = str(keys or "")
         if atype is ActionType.SCROLL:
-            kwargs["scroll_dx"] = int(_first(args, "dx", "scroll_x", default=0) or 0)
+            kwargs["scroll_dx"] = int(_num(_first(args, "dx", "scroll_x", default=0)) or 0)
             direction = str(_first(args, "direction", default="")).lower()
-            magnitude = int(_first(args, "dy", "scroll_y", "amount", "magnitude", default=3) or 3)
+            magnitude = int(_num(
+                _first(args, "dy", "scroll_y", "amount", "magnitude", default=3)) or 3)
             if direction == "up":
                 magnitude = -abs(magnitude)
             elif direction == "down":
                 magnitude = abs(magnitude)
             kwargs["scroll_dy"] = magnitude
         if atype is ActionType.WAIT:
-            kwargs["seconds"] = float(_first(args, "seconds", "duration", default=5) or 5)
+            secs = _num(_first(args, "seconds", "duration", default=5))
+            kwargs["seconds"] = secs if secs is not None else 5.0
         if atype is ActionType.NAVIGATE:
             kwargs["text"] = str(_first(args, "url", "address", default=""))
 

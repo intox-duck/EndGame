@@ -139,9 +139,9 @@ def load_config(
     paths = data.get("paths", {})
 
     cfg = Config(
-        provider=provider.get("name", "gemini"),
-        auth=provider.get("auth", "vertex"),
-        tier=provider.get("tier", "paid"),
+        provider=str(provider.get("name", "gemini")).strip().lower(),
+        auth=str(provider.get("auth", "vertex")).strip().lower(),
+        tier=str(provider.get("tier", "paid")).strip().lower(),
         project=provider.get("project", ""),
         location=provider.get("location", "europe-west2"),
         location_fallback=provider.get("location_fallback", "global"),
@@ -176,7 +176,7 @@ def load_config(
 
 
 def _validate(cfg: Config) -> None:
-    if cfg.tier.lower() == "free":
+    if cfg.tier.strip().lower() == "free":
         raise ConfigError(
             "Refusing to start on the FREE tier: free-tier requests may be used "
             "for training and human review, which is unacceptable for candidate "

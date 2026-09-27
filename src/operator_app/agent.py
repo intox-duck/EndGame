@@ -214,17 +214,24 @@ class Agent:
         if self.confirm_cb is None:
             # No way to ask -> safest default is to stop.
             return False
-        return bool(self.confirm_cb(action, decision, png))
+        try:
+            return bool(self.confirm_cb(action, decision, png))
+        except Exception:
+            # A confirmation UI that throws must never auto-approve; fail safe.
+            return False
 
     def _capture_guarded(self):
-        window = self.screen.foreground_window_title()
+        try:
+            window = self.screen.foreground_window_title()
+        except Exception:
+            window = ""
         blocked = self.capture_policy.blocked(window)
         if blocked:
             # Ask the user before capturing a blocklisted window; if they can't be
-            # asked, refuse to capture.
+            # asked (or the dialog fails), refuse to capture.
             if self.confirm_cb is None:
                 return None
-            allow = self.confirm_cb(
+            if not self._confirm(
                 Action(type=ActionType.SCREENSHOT),
                 GuardDecision(
                     Verdict.CONFIRM,
@@ -232,12 +239,15 @@ class Agent:
                     f"({blocked}).",
                 ),
                 b"",
-            )
-            if not allow:
+            ):
                 return None
-        cap = self.screen.capture(self.config.max_image_width)
-        cap.png = self.capture_policy.redact(cap.png)
-        return cap
+        try:
+            cap = self.screen.capture(self.config.max_image_width)
+            cap.png = self.capture_policy.redact(cap.png)
+            return cap
+        except Exception:
+            # A capture/redaction failure must not crash the loop.
+            return None
 
     def _is_stuck(self, png: bytes, step: Step) -> bool:
         h = hashlib.sha256(png).hexdigest()
